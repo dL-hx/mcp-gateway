@@ -80,6 +80,49 @@ def test_delete_mcp_server():
     get_res = httpx.get(f"{host}/api/mcp_server/{temp_id}")
     assert get_res.status_code == 404
     print("删除接口测试完毕")
+def test_toggle_mcp_server():
+    # 1. 创建/获取测试数据
+    json_data = {
+        "name": "test_mcp_server_toggle",
+        "desc": "test_mcp_server",
+        "cfg": "{}",
+        "protocol": "stdio"
+    }
+    create_res = httpx.post(f"{host}/api/mcp_server", json=json_data)
+    print(f"创建状态码: {create_res.status_code}")
+    assert create_res.status_code in [200, 400]
+
+    # 2. 拿到它的真实 ID (如果创建成功直接用返回值，如果已存在就去列表里找)
+    if create_res.status_code == 200:
+        target_id = create_res.json()["id"]
+    else:
+        # 如果已存在，通过列表找到它的 ID
+        list_res = httpx.get(f"{host}/api/mcp_server")
+        target_id = next(item["id"] for item in list_res.json() if item["name"] == "test_mcp_server_toggle")
+    
+    print(f"准备切换的 ID: {target_id}")
+
+    # 3. 获取切换前的状态
+    get_res = httpx.get(f"{host}/api/mcp_server/{target_id}")
+    assert get_res.status_code == 200
+    before_state = get_res.json()["is_enabled"]
+    print(f"切换前状态: {before_state}")
+
+    # 4. 执行切换操作（使用动态的 target_id）
+    response = httpx.put(f"{host}/api/mcp_server/{target_id}/toggle")
+    print(f"切换状态码: {response.status_code}")
+    assert response.status_code == 200
+
+    # 5. 根据切换前的状态进行动态断言
+    after_state = response.json()["is_enabled"]
+    print(f"切换后状态: {after_state}")
+
+    if before_state is True:
+        assert after_state is False
+    else:
+        assert after_state is True
+        
+    print("切换状态测试完毕")
 
 
 
@@ -98,5 +141,8 @@ if __name__ == "__main__":
 
     print("\n--- 5. 测试删除接口 ---")
     test_delete_mcp_server()
+
+    print("\n--- 6. 测试切换接口 ---")
+    test_toggle_mcp_server()
 
     print("\n测试执行完毕！")

@@ -22,6 +22,10 @@ class MCPServerCreate(BaseModel):
     protocol: str
     is_enabled: bool = True 
 
+class MCPServerToggleResponse(MCPServerCreate):
+    is_enabled: bool
+    id: int
+
 # 返回给前端的字段（包含id）
 class MCPServerResponse(MCPServerBase):
     id: int

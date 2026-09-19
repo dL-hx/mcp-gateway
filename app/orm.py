@@ -51,3 +51,12 @@ def delete_mcp_server_db(db: Session, mcp_server_id: int):
         db.delete(mcp_server)
         db.commit()
     return mcp_server
+
+def toggle_mcp_server_db(db: Session, mcp_server_id: int):
+    """切换 MCP Server 状态"""
+    mcp_server = get_mcp_server_by_id_db(db, mcp_server_id)
+    if mcp_server:
+        mcp_server.is_enabled = not mcp_server.is_enabled
+        db.commit()
+        db.refresh(mcp_server)
+    return mcp_server

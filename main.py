@@ -68,7 +68,6 @@ async def update_mcp_server(mcp_server_id: int, mcp_server_update: schemas.MCPSe
 
 
 # 删除MCP Server
-# 删除 MCP Server
 @app_router.delete("/mcp_server/{mcp_server_id}", response_model=schemas.MCPServerResponse)
 async def delete_mcp_server(mcp_server_id: int, db: Session = Depends(get_db)):
     mcp_server = orm.get_mcp_server_by_id_db(db, mcp_server_id)
@@ -77,6 +76,17 @@ async def delete_mcp_server(mcp_server_id: int, db: Session = Depends(get_db)):
     
     orm.delete_mcp_server_db(db, mcp_server_id)
     return mcp_server
+
+
+# 启用/停用 MCP Server
+@app_router.put("/mcp_server/{mcp_server_id}/toggle", response_model=schemas.MCPServerToggleResponse)
+async def toggle_mcp_server(mcp_server_id: int, db: Session = Depends(get_db)):
+    mcp_server = orm.toggle_mcp_server_db(db, mcp_server_id)
+    if not mcp_server:
+        raise HTTPException(status_code=404, detail="MCP server not found")
+    return mcp_server
+
+
 
 
 
