@@ -125,6 +125,51 @@ def test_toggle_mcp_server():
     print("切换状态测试完毕")
 
 
+def test_list_tools():
+    # 1. 准备临时配置（直接传 URL，不依赖数据库里的 ID）
+    json_data = {
+        "cfg": "{\"url\": \"http://localhost:8002/mcp\"}",
+        "protocol": "streamable http"
+    }
+    
+    # 2. 发起请求
+    response = httpx.post(f"{host}/api/mcp_server/list_tools", json=json_data)
+    print(f"获取工具列表状态码: {response.status_code}")
+    
+    # 3. 断言
+    assert response.status_code == 200, f"期望 200，实际 {response.status_code}, 详情: {response.text}"
+    res_json = response.json()
+    assert "tools" in res_json
+    tools = res_json["tools"]
+    assert isinstance(tools, list)
+    
+    # 4. 验证是否成功拿到本地的加减乘除工具
+    tool_names = [t["name"] for t in tools]
+    print(f"获取到的工具: {tool_names}")
+    assert "add" in tool_names
+    assert "subtract" in tool_names
+    assert "multiply" in tool_names
+    assert "divide" in tool_names
+    print("获取工具列表测试完毕")
+
+def test_list_tools_connection_refused():
+    """测试连接失败的情况，确保返回标准 JSON 格式的错误"""
+    json_data = {
+        "cfg": "{\"url\": \"http://localhost:9999/mcp\"}",
+        "protocol": "streamable http"
+    }
+    response = httpx.post(f"{host}/api/mcp_server/list_tools", json=json_data)
+    print(f"错误连接状态码: {response.status_code}")
+    print(f"错误响应内容: {response.text[:200]}")
+    
+    assert response.status_code == 500
+    
+    # 现在应该稳定返回 JSON
+    res_json = response.json()
+    assert "detail" in res_json
+    assert "Failed to list tools" in res_json["detail"]
+    print("✅ 错误响应为标准 JSON 格式")
+    print("错误连接测试完毕")
 
 if __name__ == "__main__":
     print("--- 测试创建接口 ---")
@@ -144,5 +189,12 @@ if __name__ == "__main__":
 
     print("\n--- 6. 测试切换接口 ---")
     test_toggle_mcp_server()
+
+    # 新增的测试调用
+    print("\n--- 7. 测试获取工具列表 ---")
+    test_list_tools()
+    
+    print("\n--- 8. 测试获取工具列表（连接失败） ---")
+    test_list_tools_connection_refused()
 
     print("\n测试执行完毕！")
