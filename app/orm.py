@@ -25,6 +25,12 @@ def create_mcp_server_db(db: Session, mcp_server: schemas.MCPServerCreate):
 def get_mcp_server_by_id_db(db: Session, mcp_server_id: int):
     return db.query(models.MCPServer).filter(models.MCPServer.id == mcp_server_id).first()
 
+
+# 根据 Name 查询 MCP Server
+def get_mcp_server_by_name_db(db: Session, name: str):
+    return db.query(models.MCPServer).filter(models.MCPServer.name == name).first()
+
+
 # 查询 MCP Server 列表
 def get_mcp_server_list_db(db: Session):
     return db.query(models.MCPServer).all()

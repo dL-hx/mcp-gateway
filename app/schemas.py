@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 from typing import Optional
 
+class CallToolRequest(BaseModel):
+    name: str # 工具名称 格式: "server_name/tool_name"
+    arguments: str # 工具参数 JSON 字符串，如 '{"a": 1, "b": 2}'
+
+
 # 基础字段
 class MCPServerBase(BaseModel):
     name: str

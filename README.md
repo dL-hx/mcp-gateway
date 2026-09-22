@@ -25,4 +25,8 @@ mcpclient连接 mcp server, 连接之后，在前端展示其连接状态
 ### Tools 管理
 
 - [x]  **查询 MCP Server 的 tools 列表** 不是通过id获取，而是通过配置获取工具列表
-- [] **调用 MCP Server 的 tool**
+- [x]  **调用 MCP Server 的 tool**
+
+将mcp server这里配置的工具，与模型广场中配置的mcp进行打通，完成函数的调用功能
+
+将mcp返回的数据，作为上下文

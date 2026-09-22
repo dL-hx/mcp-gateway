@@ -238,6 +238,59 @@ async def list_tools(con_cfg: schemas.ConnectionCfg, db: Session = Depends(get_d
     return JSONResponse(status_code=500, content={"detail": error_msg})
 
 
+
+# 工具调用实现
+@app_router.post("/mcp_server/call_tool")
+async def call_tool(call_tool_request: schemas.CallToolRequest, db: Session = Depends(get_db)):
+    # 1. 解析工具名: "server_name/tool_name"
+    tool_name = call_tool_request.name
+    parts = tool_name.split('/', 1)
+    if len(parts) < 2:
+        raise HTTPException(status_code=400, detail="Invalid tool name, expected format: server_name/tool_name")
+    server_name, real_tool_name = parts[0], parts[1]
+
+    # 2. 解析参数
+    try:
+        tool_arguments = json.loads(call_tool_request.arguments)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid arguments JSON")
+
+    # 3. 查找 MCP Server
+    mcp_server = orm.get_mcp_server_db(db, server_name)
+    if not mcp_server:
+        raise HTTPException(status_code=404, detail=f"MCP server '{server_name}' not found")
+
+    # 4. 确保连接已缓存（关键！第一次调用时缓存是空的）
+    connected = await connect_and_cache_client(mcp_server)
+    if not connected:
+        raise HTTPException(status_code=503, detail=f"MCP server '{server_name}' is offline")
+
+    client = mcp_clients.get(mcp_server.id)
+    if not client:
+        raise HTTPException(status_code=503, detail="MCP client not available")
+
+    # 5. 执行工具
+    try:
+        result = await client.call_tool(real_tool_name, tool_arguments)
+
+        # 6. 序列化结果（MCP SDK 对象不能直接 JSON 化）
+        content_list = []
+        if hasattr(result, "content") and result.content:
+            for item in result.content:
+                if hasattr(item, "text"):
+                    content_list.append({"type": "text", "text": item.text})
+                else:
+                    content_list.append({"type": "unknown", "data": str(item)})
+        else:
+            content_list.append({"type": "text", "text": str(result)})
+
+        return {"content": content_list}
+
+    except Exception as e:
+        print(f"❌ Failed to call tool: {real_tool_name}, error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to call tool: {real_tool_name}: {str(e)}")
+    
+    
 app.include_router(app_router)
 
 
